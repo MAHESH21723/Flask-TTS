@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
-import pyttsx3
+from gtts import gTTS
 import os
 import time
 import glob
@@ -18,29 +18,17 @@ def cleanup_old_files():
             os.remove(file)
 
 def generate_audio(text, lang="en"):
-    """ Generate speech audio from text and save it as an MP3 file. """
-    engine = pyttsx3.init()
-    engine.setProperty('rate', 150)  # Speech speed
-    engine.setProperty('volume', 1.0)  # Volume level
-
-    voices = engine.getProperty('voices')
-
-    # Set voice (Modify based on system support)
-    if lang == "ta":  
-        engine.setProperty('voice', voices[-1].id)  # Tamil (if available)
-    else:
-        engine.setProperty('voice', voices[0].id)  # Default English voice
-
-    # Unique filename with timestamp to prevent caching
+    """ Generate speech audio from text using gTTS and save it as an MP3 file. """
     filename = f"{int(time.time() * 1000)}.mp3"
     filepath = os.path.join(OUTPUT_DIR, filename)
 
-    # Generate and save speech
-    engine.save_to_file(text, filepath)
-    engine.runAndWait()
-
-    cleanup_old_files()
-    return f"/static/audio/{filename}"
+    try:
+        tts = gTTS(text=text, lang=lang)
+        tts.save(filepath)
+        cleanup_old_files()
+        return f"/static/audio/{filename}"
+    except Exception as e:
+        return str(e)
 
 @app.route('/')
 def home():
